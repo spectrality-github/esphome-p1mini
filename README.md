@@ -29,9 +29,22 @@ I have used a D1 mini clone, but most ESP-based controllers should work as long 
 ### Wiring
 The circuit is very simple, basically the 5V TX output on the P1 connector is converted to 3.3V and inverted by the transistor and connected to the UART0 RX pin on the microcontroller. The RTS (request to send) pin is pulled high so that data is sent continously and GND and 5V is taken from the P1 connector to drive the microcontroller.
 
-#### Wiring NodeMCU ESP-12
-![Wiring Diagram](images/wiring.png)
+#### Wiring D1Mini
+Wiring is simple. Five of the pins from the connector (one pin is not used)...
 
+![RJ12 pins](images/RJ12-pins.png)
+
+... are connected to four of the pads on the D1Mini.
+
+![RJ12 pins](images/D1mini-pins.png)
+
+And that is it. The result could look something like this:
+
+![RJ12 pins](images/soldered.png)
+
+Some hot-melt glue and heat shrink tubing will make it more robust though.
+
+![RJ12 pins](images/completed.png)
 
 ## Installation
 Clone the repository and create a companion `secrets.yaml` file with the following fields:
@@ -42,9 +55,9 @@ p1mini_password: <Your p1mini password (for OTA, API, etc)>
 ```
 Make sure to place the `secrets.yaml` file in the root path of the cloned project. The `p1mini_password` field can be set to any password before doing the initial upload of the firmware.
 
-Flash ESPHome as usual, just keep the `p1mini.h` file in the same location as `p1mini.yaml` (and `secrets.yaml`). *Don't* connect USB and the P1 port at the same time! If everything works, Home Assistant will autodetect the new integration when you plug it into the P1 port.
+Flash ESPHome as usual, just keep the `p1mini.h` file in the same location as `p1mini.yaml` (and `secrets.yaml`). *Don't* connect USB and the P1 port at the same time! If everything works, Home Assistant will autodetect the new integration after you plug it into the P1 port.
 
-If you do not receive any data, make sure that the P1 port is enabled and try setting the log level to `DEBUG` for more feedback.
+If you do not receive any data, make sure that the P1 port is enabled on your meter and try setting the log level to `DEBUG` in ESPHome for more feedback.
 
 ## Technical documentation
 Specification overview:
