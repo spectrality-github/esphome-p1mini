@@ -27,10 +27,7 @@ I have used a D1 mini clone, but most ESP-based controllers should work as long 
 - 1 RJ12 cable (6 wires)
 - Optionally, hot melt glue and large heat shrink tubing.
 
-### Wiring
-The circuit is very simple, basically the 5V TX output on the P1 connector is converted to 3.3V and inverted by the transistor and connected to the UART0 RX pin on the microcontroller. The RTS (request to send) pin is pulled high so that data is sent continously and GND and 5V is taken from the P1 connector to drive the microcontroller.
-
-#### Wiring D1Mini
+### Wiring D1Mini
 Wiring is simple. Five of the pins from the connector (one pin is not used)...
 
 ![RJ12 pins](images/RJ12-pins.png)
