@@ -65,7 +65,22 @@ uart:
       input: true
       pullup: true
   baud_rate: 115200
-  
+
+number:
+  - platform: template
+    name: "${device_name} update period"
+    id: p1_period
+    icon: "mdi:timer"
+    unit_of_measurement: s
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 20
+    step: 0.25
+    initial_value: 2 # Set to your desired update period (in seconds)
+    internal: false # Set to true to hide setting from Home Assistant etc.
+
+
 sensor:
 - platform: wifi_signal
   name: "${device_name} WiFi Signal"
@@ -73,8 +88,8 @@ sensor:
 - platform: custom
   lambda: |-
     auto meter_sensor = new P1Reader(
-      2000, // (minimum) update period in milliseconds
       id(uart_bus),
+      id(p1_period),
       id(p1_cts),
       id(status_led)
     );
