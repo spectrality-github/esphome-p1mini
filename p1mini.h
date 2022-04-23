@@ -6,6 +6,7 @@
 // History
 //  0.1.0 2020-11-05:   Initial release
 //  0.2.0 2022-04-13:   Major rewrite
+//  0.3.0 2022-04-23:   Passthrough to secondary P1 device
 //
 // MIT License
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 

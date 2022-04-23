@@ -7,7 +7,7 @@ Notable differences from esphome-p1reader are:
 * Code rewritten to not spend excessive amounts of time in calls to the `loop` function. This should ensure stable operation of ESPHome and might help prevent some serial communication issues.
 
 ## ESPHome version
-The current version in main is tested with ESPHome version `2022.3.2`. Make sure your ESPHome version is up to date if you experience compile problems.
+The current version in main is tested with ESPHome version `2022.4.0`. Make sure your ESPHome version is up to date if you experience compile problems.
 
 ## Verified meter hardware / supplier
 * [Sagemcom T211](https://www.ellevio.se/globalassets/content/el/elmatare-produktblad-b2c/ellevio_produktblad_fas3_t211_web2.pdf) / Ellevio
@@ -34,15 +34,41 @@ Wiring is simple. Five of the pins from the connector (one pin is not used)...
 
 ... are connected to four of the pads on the D1Mini.
 
-![RJ12 pins](images/D1mini-pins.png)
+![D1mini pins](images/D1mini-pins.png)
 
 And that is it. The result could look something like this:
 
-![RJ12 pins](images/soldered.png)
+![Soldered](images/soldered.png)
 
 Some hot-melt glue and heat shrink tubing will make it more robust though.
 
-![RJ12 pins](images/completed.png)
+![Completed](images/completed.png)
+
+## P1 Passthrough
+It is possible to attach another P1 reading device in case you need to connect a car charger (or a second p1-mini...) etc. If you have no need for this, you can skip this section and continue with "Installation" below.
+
+### Parts
+- Female connector for the RJ12 cable.
+- White (or blue) LED
+- Resistor 1 - 3 kohm
+
+![Secondary port pins](images/secondary_pins.png)
+
+The LED will, in addition to providing visual indication that updates are beeing requested on the port, ensure that the voltage on D0 will not get high enough to damage the D1mini. The LED needs to have a high enough voltage drop for it to work and some colors may not work.
+
+The value of the resistor is not very critical. I have tested with 3 kohm and anything down to 1 kohm should be fine.
+
+A p1mini wired up with a secondary port (unpowered) on an experimental board:
+
+![Secondary port](images/secondary_experimental.png)
+
+### Power to the secondary port
+
+Power to the secondary port needs to be supplied from a secondary source (Like an USB charger). Unless the secondary device is already powered (like a car charger etc) in which case it may not be necessary to supply any power at all to the secondary port.
+
+### Limitations
+
+Updates are only sent to the secondary port right after they have been received and processed (if the secondary device is requesting updates via the RTS signal). That means that if the d1mini is set to only update every 15 seconds, the secondary device can not get updates more frequently than that.
 
 ## Installation
 Clone the repository and create a companion `secrets.yaml` file with the following fields:
