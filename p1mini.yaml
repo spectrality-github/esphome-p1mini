@@ -1,5 +1,5 @@
 substitutions:
-  device_name: p1mini
+  device_name: p1test
 
 esphome:
   name: ${device_name}
@@ -55,9 +55,22 @@ switch:
       number: D4
       inverted: true
 
+binary_sensor:
+  - platform: gpio
+    id: secondary_p1_rts
+    pin:
+      number: D0
+      mode: INPUT_PULLDOWN
+      inverted: false
+
 uart:
   id: uart_bus
-#  tx_pin: TX
+  tx_pin:
+    number: TX
+    inverted: true
+    mode:
+      output: true
+      open_drain: true
   rx_pin:
     number: RX
     inverted: true
@@ -81,6 +94,7 @@ number:
     internal: false # Set to true to hide setting from Home Assistant etc.
 
 
+
 sensor:
 - platform: wifi_signal
   name: "${device_name} WiFi Signal"
@@ -91,7 +105,8 @@ sensor:
       id(uart_bus),
       id(p1_period),
       id(p1_cts),
-      id(status_led)
+      id(status_led),
+      id(secondary_p1_rts)
     );
     App.register_component(meter_sensor);
     return {

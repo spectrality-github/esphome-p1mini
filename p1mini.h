@@ -35,12 +35,14 @@ public:
     P1Reader(UARTComponent *parent,
         Number *update_period_number,
         esphome::gpio::GPIOSwitch *CTS_switch,
-        esphome::gpio::GPIOSwitch *status_switch = nullptr)
+        esphome::gpio::GPIOSwitch *status_switch = nullptr,
+        esphome::gpio::GPIOBinarySensor * secondary_RTS = nullptr)
         : UARTDevice(parent)
         , m_minimum_period_ms{ static_cast<unsigned long>(update_period_number->state * 1000.0f + 0.5f) }
         , m_CTS_switch{ CTS_switch }
         , m_status_switch{ status_switch }
         , m_update_period_number{ update_period_number }
+        , m_secondary_RTS{ secondary_RTS }
     {}
 
 private:
@@ -48,6 +50,7 @@ private:
     unsigned long m_reading_message_time;
     unsigned long m_reading_crc_time;
     unsigned long m_processing_time;
+    unsigned long m_resending_time;
     unsigned long m_waiting_time;
     unsigned long m_error_recovery_time;
     int m_num_message_loops;
@@ -70,10 +73,14 @@ private:
     // Keeps track of the start of the next line while processing.
     char *m_start_of_line;
 
+    // Keeps track of bytes sent when resending the message
+    int m_bytes_resent;
+
     enum class states {
         READING_MESSAGE,
         READING_CRC,
         PROCESSING,
+        RESENDING, // To the optional secondary P1-port
         WAITING,
         ERROR_RECOVERY
     };
@@ -98,6 +105,14 @@ private:
             m_processing_time = current_time;
             m_CTS_switch->turn_off();
             m_start_of_line = m_message_buffer;
+            break;
+        case states::RESENDING:
+            m_resending_time = current_time;
+            if (!m_secondary_RTS->state) {
+                ChangeState(states::WAITING);
+                return;
+            }
+            m_bytes_resent = 0;
             break;
         case states::WAITING:
             if (m_state != states::ERROR_RECOVERY) m_display_time_stats = true;
@@ -139,6 +154,7 @@ private:
     esphome::gpio::GPIOSwitch *const m_CTS_switch;
     esphome::gpio::GPIOSwitch *const m_status_switch;
     Number const *const m_update_period_number{ nullptr };
+    esphome::gpio::GPIOBinarySensor const * const m_secondary_RTS{ nullptr };
 
 public:
 
@@ -208,7 +224,7 @@ public:
                 while (*m_start_of_line == '\n' || *m_start_of_line == '\r') ++m_start_of_line;
                 char *end_of_line{ m_start_of_line };
                 while (*end_of_line != '\n' && *end_of_line != '\r' && *end_of_line != '\0') ++end_of_line;
-                bool const last_line{ *end_of_line == '\0' };
+                char const end_of_line_char{ *end_of_line };
                 *end_of_line = '\0';
 
                 if (end_of_line != m_start_of_line) {
@@ -226,12 +242,28 @@ public:
                         }
                     }
                 }
-                if (last_line) {
-                    ChangeState(states::WAITING);
+                *end_of_line = end_of_line_char;
+                if (end_of_line_char == '\0') {
+                    ChangeState(states::RESENDING);
                     return;
                 }
                 m_start_of_line = end_of_line + 1;
             } while (millis() - loop_start_time < 25);
+            break;
+        case states::RESENDING:
+            if (m_bytes_resent < m_message_buffer_position) {
+                int max_bytes_to_send{ 200 };
+                do {
+                    write(m_message_buffer[m_bytes_resent++]);
+                } while (m_bytes_resent < m_message_buffer_position && max_bytes_to_send-- != 0);
+            }
+            else {
+                write('!');
+                char const *crc_pos{ m_crc_buffer };
+                while (*crc_pos != '\0') write(*crc_pos++);
+                write('\n');
+                ChangeState(states::WAITING);
+            }
             break;
         case states::WAITING:
             if (m_display_time_stats) {
