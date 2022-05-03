@@ -1,5 +1,6 @@
 substitutions:
   device_name: p1mini
+  device_password: !secret p1mini_password
 
 esphome:
   name: ${device_name}
@@ -16,7 +17,7 @@ wifi:
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "esp-${device_name}"
-    password: !secret p1mini_password
+    password: "${device_password}"
 
 captive_portal:
 
@@ -27,17 +28,17 @@ logger:
 
 # Enable Home Assistant API
 api:
-  password: !secret p1mini_password
+  password: "${device_password}"
 
 ota:
-  password: !secret p1mini_password
+  password: "${device_password}"
 
 web_server:
   port: 80
   ota: false
 #  auth:
 #    username: admin
-#    password: !secret p1mini_password
+#    password: "${device_password}"
 
 text_sensor:
 # Reports the ESPHome Version with compile date
@@ -68,15 +69,11 @@ uart:
   tx_pin:
     number: TX
     inverted: true
-    mode:
-      output: true
-      open_drain: true
+    mode: OUTPUT_OPEN_DRAIN
   rx_pin:
     number: RX
     inverted: true
-    mode:
-      input: true
-      pullup: true
+    mode: INPUT_PULLUP
   baud_rate: 115200
 
 number:
