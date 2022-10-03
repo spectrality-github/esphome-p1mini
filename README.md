@@ -5,9 +5,10 @@ Notable differences from esphome-p1reader are:
 * More frequent update of sensors with configurable update period (if supported by meter).
 * No additional components needed. RJ12 cable connects directly to D1Mini (or equivalent)
 * Code rewritten to not spend excessive amounts of time in calls to the `loop` function. This should ensure stable operation of ESPHome and might help prevent some serial communication issues.
+* Now (Sep 2022) also supports the binary format used by some meters.
 
 ## ESPHome version
-The current version in main is tested with ESPHome version `2022.4.0`. Make sure your ESPHome version is up to date if you experience compile problems.
+The current version in main is tested with ESPHome version `2022.9.2`. Make sure your ESPHome version is up to date if you experience compile problems.
 
 ## Verified meter hardware / supplier
 * [Sagemcom T211](https://www.ellevio.se/globalassets/content/el/elmatare-produktblad-b2c/ellevio_produktblad_fas3_t211_web2.pdf) / Ellevio
