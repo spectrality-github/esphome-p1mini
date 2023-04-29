@@ -8,7 +8,7 @@ Notable differences from esphome-p1reader are:
 * Now (Sep 2022) also supports the binary format used by some meters.
 
 ## ESPHome version
-The current version in main is tested with ESPHome version `2022.9.2`. Make sure your ESPHome version is up to date if you experience compile problems.
+The current version in main is tested with ESPHome version `2023.4.2`. Make sure your ESPHome version is up to date if you experience compile problems.
 
 ## Verified meter hardware / supplier
 * [Sagemcom T211](https://www.ellevio.se/globalassets/content/el/elmatare-produktblad-b2c/ellevio_produktblad_fas3_t211_web2.pdf) / Ellevio
@@ -77,7 +77,8 @@ Clone the repository and create a companion `secrets.yaml` file with the followi
 ```
 wifi_ssid: <your wifi SSID>
 wifi_password: <your wifi password>
-p1mini_password: <Your p1mini password (for OTA, API, etc)>
+p1mini_password: <Your p1mini password (for OTA, etc)>
+p1mini_api_key: <Home Assistant API key>
 ```
 Make sure to place the `secrets.yaml` file in the root path of the cloned project. The `p1mini_password` field can be set to any password before doing the initial upload of the firmware.
 

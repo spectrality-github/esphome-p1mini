@@ -35,20 +35,32 @@ public:
     }
 
     P1Reader(UARTComponent *parent,
-        Number *update_period_number,
-        esphome::gpio::GPIOSwitch *CTS_switch,
+        Number *update_period_number = nullptr,
+        esphome::gpio::GPIOSwitch *CTS_switch = nullptr,
         esphome::gpio::GPIOSwitch *status_switch = nullptr,
         esphome::gpio::GPIOBinarySensor * secondary_RTS = nullptr)
         : UARTDevice(parent)
-        , m_minimum_period_ms{ static_cast<unsigned long>(update_period_number->state * 1000.0f + 0.5f) }
         , m_CTS_switch{ CTS_switch }
         , m_status_switch{ status_switch }
         , m_update_period_number{ update_period_number }
         , m_secondary_RTS{ secondary_RTS }
-    {}
+    {
+        ++s_objects_created;
+    }
+    
+    // Object should only be created once and then kept "forever", so this is probably not necessary
+    virtual ~P1Reader()
+    {
+        while (m_sensor_list != nullptr) {
+            SensorListItem *next{ m_sensor_list->Next() };
+            delete m_sensor_list;
+            m_sensor_list = next;
+        }
+    }
 
 private:
-    unsigned long m_minimum_period_ms{ 0 };
+    static int s_objects_created;
+
     unsigned long m_reading_message_time;
     unsigned long m_verifying_crc_time;
     unsigned long m_processing_time;
@@ -81,7 +93,7 @@ private:
         WAITING,
         ERROR_RECOVERY
     };
-    enum states m_state { states::READING_MESSAGE };
+    enum states m_state { states::ERROR_RECOVERY };
 
     enum class data_formats {
         UNKNOWN,
@@ -97,13 +109,13 @@ private:
         case states::READING_MESSAGE:
             m_reading_message_time = current_time;
             m_num_message_loops = m_num_processing_loops = 0;
-            m_CTS_switch->turn_on();
-            if (m_status_switch != nullptr) m_status_switch->turn_on();
+            SetCTS();
+            SetStatusLED();
             m_crc_position = m_message_buffer_position = 0;
             break;
         case states::VERIFYING_CRC:
             m_verifying_crc_time = current_time;
-            m_CTS_switch->turn_off();
+            ClearCTS();
             break;
         case states::PROCESSING_ASCII:
         case states::PROCESSING_BINARY:
@@ -112,7 +124,7 @@ private:
             break;
         case states::RESENDING:
             m_resending_time = current_time;
-            if (!m_secondary_RTS->state) {
+            if (m_secondary_RTS == nullptr || !m_secondary_RTS->state) {
                 ChangeState(states::WAITING);
                 return;
             }
@@ -121,11 +133,11 @@ private:
         case states::WAITING:
             if (m_state != states::ERROR_RECOVERY) m_display_time_stats = true;
             m_waiting_time = current_time;
-            if (m_status_switch != nullptr) m_status_switch->turn_off();
+            ClearStatusLED();
             break;
         case states::ERROR_RECOVERY:
             m_error_recovery_time = current_time;
-            m_CTS_switch->turn_off();
+            ClearCTS();
         }
         m_state = new_state;
     }
@@ -160,16 +172,42 @@ private:
     Number const *const m_update_period_number{ nullptr };
     esphome::gpio::GPIOBinarySensor const * const m_secondary_RTS{ nullptr };
 
+    unsigned long GetUpdatePeriod()
+    {
+        if (m_update_period_number == nullptr) return 2000;
+        return static_cast<unsigned long>(m_update_period_number->state * 1000.0f + 0.5f);
+    }
+    
+    void SetCTS()
+    {
+        if (m_CTS_switch != nullptr) m_CTS_switch->turn_on();
+    }
+
+    void ClearCTS()
+    {
+        if (m_CTS_switch != nullptr) m_CTS_switch->turn_off();
+    }
+    
+    void SetStatusLED()
+    {
+        if (m_status_switch != nullptr) m_status_switch->turn_on();
+    }
+
+    void ClearStatusLED()
+    {
+        if (m_status_switch != nullptr) m_status_switch->turn_off();
+    }
+
 public:
 
     void setup() override
     {
-        ChangeState(states::READING_MESSAGE);
+        ChangeState(states::ERROR_RECOVERY);
     }
 
     void loop() override {
         unsigned long const loop_start_time{ millis() };
-        m_minimum_period_ms = static_cast<unsigned long>(m_update_period_number->state * 1000.0f + 0.5f);
+        unsigned long minimum_period_ms = GetUpdatePeriod();
         switch (m_state) {
         case states::READING_MESSAGE:
             ++m_num_message_loops;
@@ -404,15 +442,17 @@ public:
         case states::WAITING:
             if (m_display_time_stats) {
                 m_display_time_stats = false;
-                ESP_LOGD("p1reader", "Cycle times: Message = %d ms (%d loops), Processing = %d ms (%d loops), (Total = %d ms)",
+                ESP_LOGD("p1reader", "Cycle times: Message = %d ms (%d loops), Processing = %d ms (%d loops), (Total = %d ms) [%d]",
                     m_processing_time - m_reading_message_time,
                     m_num_message_loops,
                     m_waiting_time - m_processing_time,
                     m_num_processing_loops,
-                    m_waiting_time - m_reading_message_time
+                    m_waiting_time - m_reading_message_time,
+                    s_objects_created
                 );
+                if (s_objects_created != 1) ESP_LOGE("p1reader", "Memory leak detected!");
             }
-            if (m_minimum_period_ms < loop_start_time - m_reading_message_time) {
+            if (minimum_period_ms < loop_start_time - m_reading_message_time) {
                 ChangeState(states::READING_MESSAGE);
             }
             break;
@@ -463,3 +503,5 @@ private:
     }
 
 };
+
+int P1Reader::s_objects_created{ 0 };

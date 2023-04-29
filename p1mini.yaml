@@ -1,6 +1,7 @@
 substitutions:
   device_name: p1mini
   device_password: !secret p1mini_password
+  device_api_key: !secret p1mini_api_key
 
 esphome:
   name: ${device_name}
@@ -28,7 +29,9 @@ logger:
 
 # Enable Home Assistant API
 api:
-  password: "${device_password}"
+  #password: "${device_password}" ### Deprecated
+  encryption:
+    key: "${device_api_key}"
 
 ota:
   password: "${device_password}"
@@ -40,10 +43,10 @@ web_server:
 #    username: admin
 #    password: "${device_password}"
 
-text_sensor:
-# Reports the ESPHome Version with compile date
-  - platform: version
-    name: "${device_name} ESPHome Version"
+# Information is available in Home assistant even without this.
+#text_sensor:
+#  - platform: version
+#    name: "${device_name} ESPHome Version"
 
 switch:
   - platform: gpio
