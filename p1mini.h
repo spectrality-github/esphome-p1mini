@@ -198,6 +198,28 @@ private:
         if (m_status_switch != nullptr) m_status_switch->turn_off();
     }
 
+    constexpr static int discard_log_num_bytes{ 32 };
+    char m_discard_log_buffer[discard_log_num_bytes * 2 + 1];
+    char *m_discard_log_position{ m_discard_log_buffer };
+    char * const m_discard_log_end{ m_discard_log_buffer + (discard_log_num_bytes * 2) };
+    
+    void AddByteToDiscardLog(uint8_t byte)
+    {
+        constexpr char hex_chars[] = "0123456789abcdef";
+        *m_discard_log_position++ = hex_chars[byte >> 4];
+        *m_discard_log_position++ = hex_chars[byte & 0xf];
+        if (m_discard_log_position == m_discard_log_end) FlushDiscardLog();
+    }
+    
+    void FlushDiscardLog()
+    {
+        if (m_discard_log_position != m_discard_log_buffer) {
+            *m_discard_log_position = '\0';
+            ESP_LOGW("p1reader", "Discarding: %s", m_discard_log_buffer);
+            m_discard_log_position = m_discard_log_buffer;
+        }
+    }
+
 public:
 
     void setup() override
@@ -459,9 +481,12 @@ public:
         case states::ERROR_RECOVERY:
             if (available()) {
                 int max_bytes_to_discard{ 200 };
-                do { read(); } while (available() && max_bytes_to_discard-- != 0);
+                do { AddByteToDiscardLog(read()); } while (available() && max_bytes_to_discard-- != 0);
             }
-            else if (500 < loop_start_time - m_error_recovery_time) ChangeState(states::WAITING);
+            else if (500 < loop_start_time - m_error_recovery_time) {
+                ChangeState(states::WAITING);
+                FlushDiscardLog();
+            }
             break;
         }
     }
