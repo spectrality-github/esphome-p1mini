@@ -180,18 +180,23 @@ private:
 
     unsigned long GetUpdatePeriod()
     {
-        if (m_update_period_number == nullptr) return 2000;
+        if (m_update_period_number == nullptr) return 10000;
         return static_cast<unsigned long>(m_update_period_number->state * 1000.0f + 0.5f);
+    }
+    
+    bool CTSAlwaysHigh() 
+    {
+        return m_update_period_number == nullptr;
     }
     
     void SetCTS()
     {
-        if (m_CTS_switch != nullptr) m_CTS_switch->turn_on();
+        if (!CTSAlwaysHigh() && m_CTS_switch != nullptr) m_CTS_switch->turn_on();
     }
 
     void ClearCTS()
     {
-        if (m_CTS_switch != nullptr) m_CTS_switch->turn_off();
+        if (!CTSAlwaysHigh() && m_CTS_switch != nullptr) m_CTS_switch->turn_off();
     }
     
     void SetStatusLED()
@@ -230,6 +235,8 @@ public:
 
     void setup() override
     {
+        // In the "RTS/CTS always high mode, set CTS high once and leave it like that.
+        if (CTSAlwaysHigh() && m_CTS_switch != nullptr) m_CTS_switch->turn_on();
         ChangeState(states::ERROR_RECOVERY);
     }
 
@@ -238,7 +245,8 @@ public:
         unsigned long minimum_period_ms = GetUpdatePeriod();
         switch (m_state) {
         case states::IDENTIFYING_MESSAGE:
-            if (available()) {
+            if (!available()) break;
+            {
                 char const read_byte{ (char)read() };
                 if (read_byte == '/') {
                     ESP_LOGD("p1reader", "ASCII data format");
@@ -254,7 +262,9 @@ public:
                 m_message_buffer[m_message_buffer_position++] = read_byte;
                 ChangeState(states::READING_MESSAGE);
             }
-            break;
+            // Not breaking here! The delay caused by exiting the loop function here can cause
+            // the UART buffer to overflow, so instead, go directly into the READING_MESSAGE
+            // part.
         case states::READING_MESSAGE:
             ++m_num_message_loops;
             while (available()) {
@@ -484,7 +494,7 @@ public:
                 );
                 if (s_objects_created != 1) ESP_LOGE("p1reader", "Memory leak detected!");
             }
-            if (minimum_period_ms < loop_start_time - m_identifying_message_time) {
+            if (CTSAlwaysHigh() || minimum_period_ms < loop_start_time - m_identifying_message_time) {
                 ChangeState(states::IDENTIFYING_MESSAGE);
             }
             break;
