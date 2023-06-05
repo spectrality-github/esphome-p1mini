@@ -61,6 +61,7 @@ public:
 private:
     static int s_objects_created;
 
+    unsigned long m_identifying_message_time;
     unsigned long m_reading_message_time;
     unsigned long m_verifying_crc_time;
     unsigned long m_processing_time;
@@ -85,6 +86,7 @@ private:
     int m_bytes_resent;
 
     enum class states {
+        IDENTIFYING_MESSAGE,
         READING_MESSAGE,
         VERIFYING_CRC,
         PROCESSING_ASCII,
@@ -106,12 +108,16 @@ private:
     {
         unsigned long const current_time{ millis() };
         switch (new_state) {
-        case states::READING_MESSAGE:
-            m_reading_message_time = current_time;
+        case states::IDENTIFYING_MESSAGE:
+            m_identifying_message_time = current_time;
+            m_crc_position = m_message_buffer_position = 0;
             m_num_message_loops = m_num_processing_loops = 0;
             SetCTS();
             SetStatusLED();
-            m_crc_position = m_message_buffer_position = 0;
+            m_data_format = data_formats::UNKNOWN;
+            break;
+        case states::READING_MESSAGE:
+            m_reading_message_time = current_time;
             break;
         case states::VERIFYING_CRC:
             m_verifying_crc_time = current_time;
@@ -231,26 +237,29 @@ public:
         unsigned long const loop_start_time{ millis() };
         unsigned long minimum_period_ms = GetUpdatePeriod();
         switch (m_state) {
+        case states::IDENTIFYING_MESSAGE:
+            if (available()) {
+                char const read_byte{ (char)read() };
+                if (read_byte == '/') {
+                    ESP_LOGD("p1reader", "ASCII data format");
+                    m_data_format = data_formats::ASCII;
+                } else if (read_byte == 0x7e) {
+                    ESP_LOGD("p1reader", "BINARY data format");
+                    m_data_format = data_formats::BINARY;
+                } else {
+                    ESP_LOGW("p1reader", "Unknown data format (0x%02X). Resetting.", read_byte);
+                    ChangeState(states::ERROR_RECOVERY);
+                    return;
+                }
+                m_message_buffer[m_message_buffer_position++] = read_byte;
+                ChangeState(states::READING_MESSAGE);
+            }
+            break;
         case states::READING_MESSAGE:
             ++m_num_message_loops;
             while (available()) {
                 // While data is available, read it one byte at a time.
                 char const read_byte{ (char)read() };
-
-                // First byte tells which data format
-                if (m_message_buffer_position == 0) {
-                    if (read_byte == '/') {
-                        ESP_LOGD("p1reader", "ASCII data format");
-                        m_data_format = data_formats::ASCII;
-                    } else if (read_byte == 0x7e) {
-                        ESP_LOGD("p1reader", "BINARY data format");
-                        m_data_format = data_formats::BINARY;
-                    } else {
-                        ESP_LOGW("p1reader", "Unknown data format (0x%02X). Resetting.", read_byte);
-                        ChangeState(states::ERROR_RECOVERY);
-                        return;
-                    }
-                }
 
                 m_message_buffer[m_message_buffer_position++] = read_byte;
                 if (m_message_buffer_position == message_buffer_size) {
@@ -464,18 +473,19 @@ public:
         case states::WAITING:
             if (m_display_time_stats) {
                 m_display_time_stats = false;
-                ESP_LOGD("p1reader", "Cycle times: Message = %d ms (%d loops), Processing = %d ms (%d loops), (Total = %d ms) [%d]",
+                ESP_LOGD("p1reader", "Cycle times: Identifying = %d ms, Message = %d ms (%d loops), Processing = %d ms (%d loops), (Total = %d ms) [%d]",
+                    m_reading_message_time - m_identifying_message_time,
                     m_processing_time - m_reading_message_time,
                     m_num_message_loops,
                     m_waiting_time - m_processing_time,
                     m_num_processing_loops,
-                    m_waiting_time - m_reading_message_time,
+                    m_waiting_time - m_identifying_message_time,
                     s_objects_created
                 );
                 if (s_objects_created != 1) ESP_LOGE("p1reader", "Memory leak detected!");
             }
-            if (minimum_period_ms < loop_start_time - m_reading_message_time) {
-                ChangeState(states::READING_MESSAGE);
+            if (minimum_period_ms < loop_start_time - m_identifying_message_time) {
+                ChangeState(states::IDENTIFYING_MESSAGE);
             }
             break;
         case states::ERROR_RECOVERY:

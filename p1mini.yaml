@@ -5,10 +5,11 @@ substitutions:
 
 esphome:
   name: ${device_name}
-  platform: ESP8266
-  board: d1_mini
   includes:
     - p1mini.h
+
+esp8266:
+  board: d1_mini
 
 wifi:
   ssid: !secret wifi_ssid
@@ -43,11 +44,6 @@ web_server:
 #    username: admin
 #    password: "${device_password}"
 
-# Information is available in Home assistant even without this.
-#text_sensor:
-#  - platform: version
-#    name: "${device_name} ESPHome Version"
-
 switch:
   - platform: gpio
     id: p1_cts
@@ -78,6 +74,7 @@ uart:
     inverted: true
     mode: INPUT_PULLUP
   baud_rate: 115200
+  rx_buffer_size: 512
 
 number:
   - platform: template
