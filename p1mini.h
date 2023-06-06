@@ -180,7 +180,7 @@ private:
 
     unsigned long GetUpdatePeriod()
     {
-        if (m_update_period_number == nullptr) return 10000;
+        if (m_update_period_number == nullptr) return 0;
         return static_cast<unsigned long>(m_update_period_number->state * 1000.0f + 0.5f);
     }
     

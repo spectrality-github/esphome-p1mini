@@ -14,15 +14,19 @@ The current version in main is tested with ESPHome version `2023.4.2`. Make sure
 * [Sagemcom T211](https://www.ellevio.se/globalassets/content/el/elmatare-produktblad-b2c/ellevio_produktblad_fas3_t211_web2.pdf) / Ellevio
 * [Aidon 6534](https://jonkopingenergi.se/storage/B9A468B538E9CF48DF5E276BDA7D2D12727D152110286963E9D603D67B849242/5009da534dbc44b6a34cb0bed31cfd5c/pdf/media/b53a4057862646cbb22702a847a291a2/Aidon%206534%20bruksansvisning.pdf) / SEVAB
 * [Landis+Gyr E360](https://eu.landisgyr.com/blog-se/e360-en-smart-matare-som-optimerarden-totala-agandekostnaden) / E.ON
+* [S34U18 (Sanxing SX631)](https://www.vattenfalleldistribution.se/matarbyte/nya-elmataren/) / Vattenfall - [But read this](NO-RTS.md)
 
 ## Meters verified with esphome-p1reader, which should work too...
 * [Itron A300](https://boraselnat.se/elnat/elmatarbyte-2020-2021/sa-har-fungerar-din-nya-elmatare/) / Borås Elnät
-* [S34U18 (Sanxing SX631)](https://www.vattenfalleldistribution.se/matarbyte/nya-elmataren/) / Vattenfall 
 * [KAIFA MA304H4E](https://reko.nackaenergi.se/elmatarbyte/) / Nacka Energi
 * [KAIFA CL109](https://www.oresundskraft.se/dags-for-matarbyte/) / Öresundskraft
 
 ## Hardware
 I have used a D1 mini clone, but most ESP-based controllers should work as long as you figure out appropriate pins to use. The P1 port on the meter provides 5V up to 250mA which makes it possible to power the circuit directly from the P1 port.
+
+ESP32 based boards draw more power, which may cause a problem with the supply from the meter and generally offer no advantage over ESP8266 based boards.
+
+If you have pre built hardware which does not connect the RTS signal to a GPIO, [read this](NO-RTS.md).
 
 ### Parts
 - 1 (Wemos) D1 mini or clone.
