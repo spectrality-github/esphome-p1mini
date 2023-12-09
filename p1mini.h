@@ -245,7 +245,14 @@ public:
         unsigned long minimum_period_ms = GetUpdatePeriod();
         switch (m_state) {
         case states::IDENTIFYING_MESSAGE:
-            if (!available()) break;
+            if (!available()) {
+                constexpr unsigned long max_wait_time_ms{ 60000 };
+                if (max_wait_time_ms < loop_start_time - m_identifying_message_time) {
+                    ESP_LOGW("p1reader", "No data received for %d seconds.", max_wait_time_ms / 1000);
+                    ChangeState(states::ERROR_RECOVERY);
+                }
+                break;
+            }
             {
                 char const read_byte{ (char)read() };
                 if (read_byte == '/') {
@@ -296,6 +303,7 @@ public:
                 if (m_crc_position > 0 && m_message_buffer_position > m_crc_position) {
                     if (m_data_format == data_formats::ASCII && read_byte == '\n') {
                         ChangeState(states::VERIFYING_CRC);
+                        return;
                     } else if (m_data_format == data_formats::BINARY && m_message_buffer_position == m_crc_position + 3) {
                         if (read_byte != 0x7e) {
                             ESP_LOGW("p1reader", "Unexpected end. Resetting.");
@@ -303,7 +311,15 @@ public:
                             return;
                         }
                         ChangeState(states::VERIFYING_CRC);
+                        return;
                     }
+                }
+            }
+            {
+                constexpr unsigned long max_message_time_ms{ 10000 };
+                if (max_message_time_ms < loop_start_time - m_reading_message_time && m_reading_message_time < loop_start_time) {
+                    ESP_LOGW("p1reader", "Complete message not received within %d seconds. Resetting.", max_message_time_ms / 1000);
+                    ChangeState(states::ERROR_RECOVERY);
                 }
             }
             break;
