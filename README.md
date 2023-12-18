@@ -8,7 +8,8 @@ Notable differences from esphome-p1reader are:
 * Now (Sep 2022) also supports the binary format used by some meters.
 
 ## ESPHome version
-Custom components, such as this one, are deprecated by ESPHome according to [this page](https://esphome.io/components/sensor/custom) and are expected to stop working in future releases of ESPHome. The current version is tested with ESPHome version `2023.9.0`.
+> [!WARNING]
+> Custom components, such as this one, are deprecated by ESPHome according to [this page](https://esphome.io/components/sensor/custom) and are expected to stop working in future releases of ESPHome. The current version is tested with ESPHome version `2023.9.0`.
 
 If anyone has experience converting a custom component into an [External component](https://esphome.io/components/external_components), feel free to contribute!
 
