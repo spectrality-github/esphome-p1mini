@@ -1,5 +1,5 @@
 substitutions:
-  device_name: p1mini
+  device_name: p1reader
   device_password: !secret p1mini_password
   device_api_key: !secret p1mini_api_key
 
@@ -25,7 +25,7 @@ captive_portal:
 
 # Enable logging
 logger:
-  level: INFO
+  level: Debug
   baud_rate: 0 # disable logging over uart
 
 # Enable Home Assistant API
@@ -54,6 +54,8 @@ switch:
     pin:
       number: D4
       inverted: true
+  - platform: restart
+    name: "Restart P1 reader"
 
 binary_sensor:
   - platform: gpio
@@ -85,9 +87,9 @@ number:
     optimistic: true
     restore_value: true
     min_value: 0
-    max_value: 20
-    step: 0.25
-    initial_value: 2 # Set to your desired update period (in seconds)
+    max_value: 120
+    step: 1
+    initial_value: 30 # Set to your desired update period (in seconds)
     internal: false # Set to true to hide setting from Home Assistant etc.
 
 
@@ -106,15 +108,33 @@ sensor:
       id(secondary_p1_rts)
     );
     App.register_component(meter_sensor);
-    return {
+    return {      
       meter_sensor->AddSensor( 1, 8, 0),
+      meter_sensor->AddSensor( 1, 8, 1),
+      meter_sensor->AddSensor( 1, 8, 2),
+      meter_sensor->AddSensor( 1, 8, 3),
+      meter_sensor->AddSensor( 1, 8, 4),
       meter_sensor->AddSensor( 2, 8, 0),
+      meter_sensor->AddSensor( 2, 8, 1),
+      meter_sensor->AddSensor( 2, 8, 2),
+      meter_sensor->AddSensor( 2, 8, 3),
+      meter_sensor->AddSensor( 2, 8, 4),
       meter_sensor->AddSensor( 3, 8, 0),
+      meter_sensor->AddSensor( 3, 8, 1),
+      meter_sensor->AddSensor( 3, 8, 2),
+      meter_sensor->AddSensor( 3, 8, 3),
+      meter_sensor->AddSensor( 3, 8, 4),
       meter_sensor->AddSensor( 4, 8, 0),
+      meter_sensor->AddSensor( 4, 8, 1),
+      meter_sensor->AddSensor( 4, 8, 2),
+      meter_sensor->AddSensor( 4, 8, 3),
+      meter_sensor->AddSensor( 4, 8, 4),
       meter_sensor->AddSensor( 1, 7, 0),
       meter_sensor->AddSensor( 2, 7, 0),
       meter_sensor->AddSensor( 3, 7, 0),
       meter_sensor->AddSensor( 4, 7, 0),
+      meter_sensor->AddSensor(14, 7, 0),
+      meter_sensor->AddSensor(15, 7, 0),
       meter_sensor->AddSensor(21, 7, 0),
       meter_sensor->AddSensor(22, 7, 0),
       meter_sensor->AddSensor(41, 7, 0),
@@ -140,7 +160,47 @@ sensor:
     accuracy_decimals: 3
     state_class: "total_increasing"
     device_class: "energy"
+  - name: "Cumulative Active Import rate 1"
+    unit_of_measurement: kWh
+    accuracy_decimals: 3
+    state_class: "total_increasing"
+    device_class: "energy"
+  - name: "Cumulative Active Import rate 2"
+    unit_of_measurement: kWh
+    accuracy_decimals: 3
+    state_class: "total_increasing"
+    device_class: "energy"
+  - name: "Cumulative Active Import rate 3"
+    unit_of_measurement: kWh
+    accuracy_decimals: 3
+    state_class: "total_increasing"
+    device_class: "energy"
+  - name: "Cumulative Active Import rate 4"
+    unit_of_measurement: kWh
+    accuracy_decimals: 3
+    state_class: "total_increasing"
+    device_class: "energy"
   - name: "Cumulative Active Export"
+    unit_of_measurement: kWh
+    accuracy_decimals: 3
+    state_class: "total_increasing"
+    device_class: "energy"
+  - name: "Cumulative Active Export rate 1"
+    unit_of_measurement: kWh
+    accuracy_decimals: 3
+    state_class: "total_increasing"
+    device_class: "energy"
+  - name: "Cumulative Active Export rate 2"
+    unit_of_measurement: kWh
+    accuracy_decimals: 3
+    state_class: "total_increasing"
+    device_class: "energy"
+  - name: "Cumulative Active Export rate 3"
+    unit_of_measurement: kWh
+    accuracy_decimals: 3
+    state_class: "total_increasing"
+    device_class: "energy"
+  - name: "Cumulative Active Export rate 4"
     unit_of_measurement: kWh
     accuracy_decimals: 3
     state_class: "total_increasing"
@@ -148,7 +208,31 @@ sensor:
   - name: "Cumulative Reactive Import"
     unit_of_measurement: kvarh
     accuracy_decimals: 3
+  - name: "Cumulative Reactive Import rate 1"
+    unit_of_measurement: kvarh
+    accuracy_decimals: 3
+  - name: "Cumulative Reactive Import rate 2"
+    unit_of_measurement: kvarh
+    accuracy_decimals: 3
+  - name: "Cumulative Reactive Import rate 3"
+    unit_of_measurement: kvarh
+    accuracy_decimals: 3
+  - name: "Cumulative Reactive Import rate 4"
+    unit_of_measurement: kvarh
+    accuracy_decimals: 3
   - name: "Cumulative Reactive Export"
+    unit_of_measurement: kvarh
+    accuracy_decimals: 3
+  - name: "Cumulative Reactive Export rate 1"
+    unit_of_measurement: kvarh
+    accuracy_decimals: 3
+  - name: "Cumulative Reactive Export rate 2"
+    unit_of_measurement: kvarh
+    accuracy_decimals: 3
+  - name: "Cumulative Reactive Export rate 3"
+    unit_of_measurement: kvarh
+    accuracy_decimals: 3
+  - name: "Cumulative Reactive Export rate 4"
     unit_of_measurement: kvarh
     accuracy_decimals: 3
   - name: "Momentary Active Import"
@@ -163,6 +247,16 @@ sensor:
   - name: "Momentary Reactive Export"
     unit_of_measurement: kvar
     accuracy_decimals: 3
+  - name: "Momentary net Frequency"
+    unit_of_measurement: Hz
+    filters:
+      - multiply: 1000
+    accuracy_decimals: 1
+  - name: "Momentary Active Power"
+    unit_of_measurement: W
+    filters:
+      - multiply: 1000
+    accuracy_decimals: 1
   - name: "Momentary Active Import Phase 1"
     unit_of_measurement: kW
     accuracy_decimals: 3
@@ -201,19 +295,31 @@ sensor:
     accuracy_decimals: 3
   - name: "Voltage Phase 1"
     unit_of_measurement: V
+    filters:
+      - multiply: 1000
     accuracy_decimals: 1
   - name: "Voltage Phase 2"
     unit_of_measurement: V
+    filters:
+      - multiply: 1000
     accuracy_decimals: 1
   - name: "Voltage Phase 3"
     unit_of_measurement: V
+    filters:
+      - multiply: 1000
     accuracy_decimals: 1
   - name: "Current Phase 1"
     unit_of_measurement: A
+    filters:
+      - multiply: 1000
     accuracy_decimals: 1
   - name: "Current Phase 2"
     unit_of_measurement: A
+    filters:
+      - multiply: 1000
     accuracy_decimals: 1
   - name: "Current Phase 3"
     unit_of_measurement: A
+    filters:
+      - multiply: 1000
     accuracy_decimals: 1
